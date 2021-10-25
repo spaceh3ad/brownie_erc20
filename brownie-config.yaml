@@ -15,6 +15,9 @@ networks:
     verify: False
   ganache-local:
     verify: False
+  bsc-test:
+    eth_usd_price_feed: "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526"
+    verify: True
   rinkeby:
     vrf_coordinator: "0xb3dCcb4Cf7a26f6cf6B120Cf5A73875B7BBc655B"
     eth_usd_price_feed:  "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e"
