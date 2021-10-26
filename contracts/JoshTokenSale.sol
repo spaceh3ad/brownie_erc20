@@ -62,14 +62,14 @@ contract JoshTokenSale is Ownable {
     function buyTokens() public payable {
         require(sale_state == SALE_STATE.OPEN, "Sale not active");
         uint256 _ethPrice = getEthPrice();
-        uint256 _tokenAmount = (msg.value * _ethPrice) / tokenPrice;
+        uint256 _tokenAmount = (msg.value * _ethPrice) / tokenPrice / 10**23;
 
         require(
             getSaleAllowance() >= _tokenAmount,
             "Not enough tokens for this phase!"
         );
         balanceOf[msg.sender] += _tokenAmount;
-        _joshToken.transferFrom(admin, address(this), _tokenAmount);
+        _joshToken.transferFrom(admin, msg.sender, _tokenAmount);
         emit BuyTokens(_tokenAmount);
     }
 }
