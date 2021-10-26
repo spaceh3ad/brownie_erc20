@@ -35,7 +35,15 @@ contract JoshTokenSale is Ownable {
         return _joshToken.allowance(admin, address(this));
     }
 
-    function startSale(uint256 _tokenPrice) public onlyOwner {
+    function startSale(uint256 _tokensAllocation, uint256 _tokenPrice)
+        public
+        onlyOwner
+    {
+        require(sale_state == SALE_STATE.CLOSE);
+        require(
+            getSaleAllowance() == _tokensAllocation,
+            "Sale contract doesn't have enough tokens!"
+        );
         tokenPrice = _tokenPrice;
         sale_state = SALE_STATE.OPEN;
     }
@@ -47,17 +55,21 @@ contract JoshTokenSale is Ownable {
     }
 
     function endSale() public onlyOwner {
-        for (uint256 i = 0; i < investors.length; i++) {
-            address payable addr = investors[i];
-            uint256 tokens = balanceOf[addr];
-            _joshToken.transferFrom(admin, address(this), tokens);
-        }
+        require(sale_state == SALE_STATE.OPEN);
         sale_state = SALE_STATE.CLOSE;
     }
 
-    function buyTokens(uint256 _numberOfTokens) public payable {
+    function buyTokens() public payable {
         require(sale_state == SALE_STATE.OPEN, "Sale not active");
-        balanceOf[msg.sender] += _numberOfTokens;
-        emit BuyTokens(_numberOfTokens);
+        uint256 _ethPrice = getEthPrice();
+        uint256 _tokenAmount = (msg.value * _ethPrice) / tokenPrice / 10**23;
+
+        require(
+            getSaleAllowance() >= _tokenAmount,
+            "Not enough tokens for this phase!"
+        );
+        balanceOf[msg.sender] += _tokenAmount;
+        _joshToken.transferFrom(admin, msg.sender, _tokenAmount);
+        emit BuyTokens(_tokenAmount);
     }
 }

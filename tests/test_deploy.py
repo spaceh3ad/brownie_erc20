@@ -1,15 +1,15 @@
 from brownie import accounts, config, network, exceptions, interface
 from scripts.deploy import deploy_contracts
-from scripts.helpful_scripts import get_account
+from scripts.helpful_scripts import get_account, INITIAL_VALUE, DECIMALS
+import time
 
 FIRST_ALLOC = 10 ** 6
+TOKEN_PRICE = 5  # in cents (cant be decimal!!!)
 
 
-def test_can_start_sale():
+def test_sale():
     account = get_account()
     token, sale = deploy_contracts()
-    tx = sale.startSale(5, {"from": account})  # 0.05$ / TOKEN
-    tx.wait(1)
 
     josh_token_contract = interface.JoshTokenInterface(token.address)
     approve_tx = josh_token_contract.approve(
@@ -17,27 +17,38 @@ def test_can_start_sale():
     )
     approve_tx.wait(1)
 
-    assert sale.tokenPrice() == 5, "Price for token not equal to 0.05$"
+    print(f"ethPrice {sale.getEthPrice()}")
 
-    # josh_token_contract = interface.JoshTokenInterface(token.address)
-    # allowance = josh_token_contract.allowance(account, token.address)
-    print(f" Allowance = { sale.getSaleAllowance()}")
-    print("adadad")
+    tx = sale.startSale(FIRST_ALLOC, TOKEN_PRICE, {"from": account})  # 0.05$ / TOKEN
+    tx.wait(1)
+
+    assert sale.tokenPrice() == TOKEN_PRICE, "Price for token not equal to 0.05$"
+
     assert sale.getSaleAllowance() == FIRST_ALLOC, "Allowance not equal allocation!"
 
-    tx = sale.buyTokens(100, {"from": accounts[1]})
+    """
+        msg.value is amount in wei
+        I send 1 ETH -> msg.value = 1e18
+    """
+
+    tx = sale.buyTokens(
+        {"from": accounts[1], "value": 1 * 10 ** 18}
+    )  # buying for 0.01 ETH, should get 0.01*INTIAL_PRICE/TOKEN_PRICE
     tx.wait(1)
-    # print(sale)
-    # josh_token_contract = interface.JoshTokenInterface(token.address)
-    # [accounts[1]]
+    time.sleep(5)
 
-    # account = get_account()
-    # sale = deploy_contracts()
-    # sale_tx = sale.startSale(10 * 10 ** 6, 20, {"from": account})
-    # sale_tx.wait(1)
-    # assert sale.sale_state() == 0, "Sale state not OPEN"
+    print(josh_token_contract.balanceOf(accounts[1]))
+    # assert (
+    #     josh_token_contract.balanceOf(accounts[1])
+    #     == 10 ** 18 * INITIAL_VALUE / TOKEN_PRICE / 10 ** 23
+    # )
 
-    # tx = sale.buyTokens(100, {"from": accounts[1]})
+    # tx = sale.buyTokens(
+    #     {"from": accounts[2], "value": 1 * 10 ** 18}
+    # )  # buying for 1 ETH
     # tx.wait(1)
-    # balance_account_1 = sale.balanceOf(accounts[1])
-    # print(f"{balance_account_1 = }")
+
+    # assert (
+    #     josh_token_contract.balanceOf(accounts[2])
+    #     == 10 ** 18 * INITIAL_VALUE / TOKEN_PRICE / 10 ** DECIMALS
+    # )

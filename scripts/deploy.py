@@ -15,9 +15,9 @@ from scripts.helpful_scripts import (
 )
 from web3 import Web3
 
-INITIAL_SUPPLY = 10 * 10 ** 6
-TOKEN_PRICE = 20  # cents
+INITIAL_SUPPLY = 1 * 10 ** 6 * 10 ** 18
 FIRST_ALLOC = 10 ** 6
+TOKEN_PRICE = 500  # 100 -> 1 cent
 
 
 def deploy_contracts():
