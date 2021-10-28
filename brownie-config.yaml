@@ -12,11 +12,24 @@ networks:
   development:
     token: "0xfc81C286040505C4B209C8b11Fa25Bf85aF0CF00"
     sale: "0xc50eE3e8A4a694994e79e3725Ee6E0962a617b2C"
+    keyhash: "0x2ed0feb3e7fd2022120aa84fab1945545a9f2ffc9076fd6156fa96eaff4c1311"
+    fee: 100000000000000000
     verify: False
   ganache-local:
     verify: False
+  bsc:
+    eth_usd_price_feed: "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526"
+    vrf_coordinator: "0x747973a5A2a4Ae1D3a8fDF5479f1514F65Db9C31"
+    link_token: "0x404460C6A5EdE2D891e8297795264fDe62ADBB75"
+    keyhash: "0xc251acd21ec4fb7f31bb8868288bfdbaeb4fbfec2df3735ddbd4f7dc8d60103c"
+    fee: 200000000000000000
+    verify: True
   bsc-test:
     eth_usd_price_feed: "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526"
+    vrf_coordinator: "0xa555fC018435bef5A13C6c6870a9d4C11DEC329C"
+    link_token: "0x84b9B910527Ad5C03A9Ca831909E21e236EA7b06"
+    keyhash: "0xcaf3c3727e033261d383b315559476f48034c13b18f8cafed4d871abe5049186"
+    fee: 100000000000000000
     verify: True
   rinkeby:
     vrf_coordinator: "0xb3dCcb4Cf7a26f6cf6B120Cf5A73875B7BBc655B"
@@ -30,3 +43,5 @@ networks:
 wallets:
   from_key: ${PRIVATE_KEY}
   from_mnemonic: ${MNEMONIC}
+
+  # to launch ganache-cli -m "$(cat .secret)"
