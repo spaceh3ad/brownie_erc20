@@ -11,7 +11,9 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
     address payable[] public investors;
     address payable public recentWinner;
 
-    mapping(address => uint256) public balanceOf;
+    uint256 public constant MAX = 25000000000000000000;
+    uint256 public nRoundTime;
+    uint8 public phase;
 
     IERC20 private _joshToken;
 
@@ -28,7 +30,14 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
     uint256 public tokenPrice;
     uint256 public randomness;
     uint256 public fee;
-    uint256 public constant MAX = 25000000000000000000;
+
+    uint256[5] bonusForLuckyOne = [
+        1000000000000000000,
+        2000000000000000000,
+        3000000000000000000,
+        4000000000000000000,
+        5000000000000000000
+    ];
 
     bytes32 public keyhash;
 
@@ -37,6 +46,7 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
 
     constructor(
         IERC20 joshToken,
+        uint256 _RoundTime,
         address _priceFeedAddress,
         address _vrfCoordinator,
         address _link,
@@ -44,6 +54,7 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
         bytes32 _keyhash
     ) VRFConsumerBase(_vrfCoordinator, _link) {
         _joshToken = joshToken;
+        nRoundTime = _RoundTime;
         ethUsdPriceFeed = AggregatorV3Interface(_priceFeedAddress);
         sale_state = SALE_STATE.CLOSED;
         fee = _fee;
@@ -54,22 +65,25 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
         return _joshToken.allowance(owner(), address(this));
     }
 
-    function startSale(uint256 _tokensAllocation, uint256 _tokenPrice)
-        public
-        onlyOwner
-    {
+    function startSale(
+        uint256 _tokensAllocation,
+        uint256 _tokenPrice,
+        uint256 _RoundTime
+    ) public onlyOwner {
         require(sale_state == SALE_STATE.CLOSED);
         require(
             getSaleAllowance() == _tokensAllocation,
             "Sale contract doesn't have enough tokens!"
         );
         tokenPrice = _tokenPrice;
+        nRoundTime = _RoundTime;
         sale_state = SALE_STATE.OPEN;
+        phase += 1;
     }
 
     function getEthPrice() public view returns (uint256) {
         (, int256 price, , , ) = ethUsdPriceFeed.latestRoundData();
-        uint256 adjustedPrice = uint256(price); //18 decimals
+        uint256 adjustedPrice = uint256(price);
         return adjustedPrice;
     }
 
@@ -82,6 +96,7 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
 
     function buyTokens() public payable {
         require(sale_state == SALE_STATE.OPEN, "Sale not active");
+        require(block.timestamp < nRoundTime, "Phase ended");
         require(msg.value <= MAX, "Maximum amount of purchase is 25BNB");
         uint256 _ethPrice = getEthPrice();
         uint256 _tokenAmount = (msg.value * _ethPrice) / tokenPrice / 10**8;
@@ -91,7 +106,6 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
             "Not enough tokens for this phase!"
         );
 
-        balanceOf[msg.sender] += _tokenAmount;
         _joshToken.transferFrom(owner(), msg.sender, _tokenAmount);
         emit BuyTokens(_tokenAmount);
         investors.push(payable(msg.sender));
@@ -109,7 +123,7 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
         require(_randomness > 0, "random-not-found");
         uint256 indexOfWinner = _randomness % investors.length;
         recentWinner = investors[indexOfWinner];
-        recentWinner.transfer((1 / investors.length) * address(this).balance);
+        recentWinner.transfer(bonusForLuckyOne[phase]);
         investors = new address payable[](0);
         sale_state = SALE_STATE.CLOSED;
         randomness = _randomness;
