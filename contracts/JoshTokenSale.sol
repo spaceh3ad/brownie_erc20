@@ -5,10 +5,9 @@ import "./JoshToken.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import "@chainlink/contracts/src/v0.6/VRFConsumerBase.sol";
+import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 
 contract JoshTokenSale is VRFConsumerBase, Ownable {
-    address public admin;
     address payable[] public investors;
     address payable public recentWinner;
 
@@ -43,8 +42,7 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
         address _link,
         uint256 _fee,
         bytes32 _keyhash
-    ) public VRFConsumerBase(_vrfCoordinator, _link) {
-        admin = msg.sender;
+    ) VRFConsumerBase(_vrfCoordinator, _link) {
         _joshToken = joshToken;
         ethUsdPriceFeed = AggregatorV3Interface(_priceFeedAddress);
         sale_state = SALE_STATE.CLOSED;
@@ -53,14 +51,14 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
     }
 
     function getSaleAllowance() public view returns (uint256) {
-        return _joshToken.allowance(admin, address(this));
+        return _joshToken.allowance(owner(), address(this));
     }
 
     function startSale(uint256 _tokensAllocation, uint256 _tokenPrice)
         public
         onlyOwner
     {
-        require(sale_state == SALE_STATE.CLOSE);
+        require(sale_state == SALE_STATE.CLOSED);
         require(
             getSaleAllowance() == _tokensAllocation,
             "Sale contract doesn't have enough tokens!"
@@ -77,19 +75,16 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
 
     function endSale() public onlyOwner {
         require(sale_state == SALE_STATE.OPEN);
-        lottery_state = LOTTERY_STATE.CALCULATING_WINNER;
-
+        sale_state = SALE_STATE.CALCULATING_WINNER;
         bytes32 requestId = requestRandomness(keyhash, fee);
         emit RequestedRandomness(requestId);
-
-        payable(admin).transfer(address(this).balance);
     }
 
     function buyTokens() public payable {
         require(sale_state == SALE_STATE.OPEN, "Sale not active");
         require(msg.value <= MAX, "Maximum amount of purchase is 25BNB");
         uint256 _ethPrice = getEthPrice();
-        uint256 _tokenAmount = (msg.value * _ethPrice) / tokenPrice / 10**23;
+        uint256 _tokenAmount = (msg.value * _ethPrice) / tokenPrice / 10**8;
 
         require(
             getSaleAllowance() >= _tokenAmount,
@@ -97,9 +92,9 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
         );
 
         balanceOf[msg.sender] += _tokenAmount;
-        _joshToken.transferFrom(admin, msg.sender, _tokenAmount);
+        _joshToken.transferFrom(owner(), msg.sender, _tokenAmount);
         emit BuyTokens(_tokenAmount);
-        investors.push(msg.sender);
+        investors.push(payable(msg.sender));
     }
 
     function fulfillRandomness(bytes32 _requestId, uint256 _randomness)
@@ -107,16 +102,18 @@ contract JoshTokenSale is VRFConsumerBase, Ownable {
         override
     {
         require(
-            lottery_state == LOTTERY_STATE.CALCULATING_WINNER,
+            sale_state == SALE_STATE.CALCULATING_WINNER,
             "You arn't there yet"
         );
 
         require(_randomness > 0, "random-not-found");
         uint256 indexOfWinner = _randomness % investors.length;
         recentWinner = investors[indexOfWinner];
-        recentWinner.transfer(address(this).balance);
+        recentWinner.transfer((1 / investors.length) * address(this).balance);
         investors = new address payable[](0);
-        lottery_state = LOTTERY_STATE.CLOSED;
+        sale_state = SALE_STATE.CLOSED;
         randomness = _randomness;
+
+        payable(owner()).transfer(address(this).balance);
     }
 }

@@ -27,10 +27,10 @@ def deploy_contracts():
 
 
 def deploy_token():
-    account = get_account()
+    accounts = get_account()
     token = JoshToken.deploy(
         INITIAL_SUPPLY,
-        {"from": account},
+        {"from": accounts[0]},
         publish_source=config["networks"][network.show_active()].get("verify", False),
     )
     print(f"Deployed JoshToken at: {token}")
@@ -38,7 +38,7 @@ def deploy_token():
 
 
 def deploy_sale(token):
-    account = get_account()
+    accounts = get_account()
     if network.show_active() not in LOCAL_BLOCKCHAIN_ENVIROMENTS:
         price_feed_address = config["networks"][network.show_active()][
             "eth_usd_price_feed"
@@ -49,8 +49,12 @@ def deploy_sale(token):
 
     sale = JoshTokenSale.deploy(
         interface.JoshTokenInterface(token.address),
-        price_feed_address,
-        {"from": account},
+        get_contract("eth_usd_price_feed").address,
+        get_contract("vrf_coordinator").address,
+        get_contract("link_token").address,
+        config["networks"][network.show_active()]["fee"],
+        config["networks"][network.show_active()]["keyhash"],
+        {"from": accounts[0]},
         publish_source=config["networks"][network.show_active()].get("verify", False),
     )
     print(f"Deployed JoshTokenSale at: {sale}")
