@@ -1,4 +1,4 @@
-from brownie import accounts, config, network, exceptions, interface
+from brownie import accounts, config, network, exceptions, interface, Contract
 from scripts.deploy import deploy_contracts
 from scripts.helpful_scripts import get_account, fund_with_link
 import time
@@ -33,22 +33,21 @@ def test_sale():
         msg.value is amount in wei
         I send 1 ETH -> msg.value = 1e18
     """
-    # print(sale.recentWinner())
 
-    # tx = sale.buyTokens({"from": accounts[1], "value": 1 * 10 ** 18})
-    # tx.wait(1)
-    # time.sleep(5)
+    tx = sale.buyTokens({"from": accounts[1], "value": 4 * 10 ** 17})
+    tx.wait(1)
+    time.sleep(5)
 
-    # tx = sale.buyTokens({"from": accounts[2], "value": 0.5 * 10 ** 18})
-    # tx.wait(1)
-    # time.sleep(5)
+    tx = sale.buyTokens({"from": accounts[2], "value": 15 * 10 ** 16})
+    tx.wait(1)
+    time.sleep(5)
 
-    # tx = sale.buyTokens({"from": accounts[3], "value": 2 * 10 ** 18})
-    # tx.wait(1)
-    # time.sleep(5)
+    tx = sale.buyTokens({"from": accounts[3], "value": 2 * 10 ** 17})
+    tx.wait(1)
+    time.sleep(5)
 
-    # tx = fund_with_link(sale.address)
-    # tx.wait(1)
+    tx = fund_with_link(sale.address)
+    tx.wait(1)
 
     # tx = sale.endSale({"from": accounts[0]})
     # tx.wait(1)
